@@ -1,0 +1,62 @@
+{
+  "info": {
+    "name": "FS3M Backend - Users API",
+    "_postman_id": "fs3m-users-api",
+    "description": "Coleção de rotas para testar CRUD de usuários e autenticação JWT.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"123456\"\n}"
+        },
+        "url": { "raw": "http://localhost:8000/api/auth/token/", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "auth", "token"] }
+      }
+    },
+    {
+      "name": "Auth - Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"refresh\": \"<refresh_token_aqui>\"\n}"
+        },
+        "url": { "raw": "http://localhost:8000/api/auth/token/refresh/", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "auth", "token", "refresh"] }
+      }
+    },
+    {
+      "name": "Users - Criar Usuário",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"nome\": \"Novo Usuário\",\n    \"email\": \"novo@example.com\",\n    \"password\": \"123456\",\n    \"role\": \"cliente\"\n}"
+        },
+        "url": { "raw": "http://localhost:8000/api/users/", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "users"] }
+      }
+    },
+    {
+      "name": "Users - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer <access_token_aqui>" }
+        ],
+        "url": { "raw": "http://localhost:8000/api/users/", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "users"] }
+      }
+    }
+  ]
+}

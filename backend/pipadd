@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Garante que estamos na raiz do projeto (onde está o script)
+cd "$(dirname "$0")"
+
+# 1) Garante venv pronta e ativa
+if [ ! -d ".venv" ]; then
+  echo "🔧 Criando venv em .venv ..."
+  python3 -m venv .venv
+fi
+
+# Ativa a venv (funciona em bash/zsh)
+# shellcheck disable=SC1091
+source .venv/bin/activate
+
+# 2) Uso e instalação
+if [ $# -lt 1 ]; then
+  echo "Uso: ./pipadd pacote[==versao] [outro_pacote ...]"
+  exit 1
+fi
+
+echo "➡️  Instalando: $*"
+python3 -m pip install "$@"
+
+# 3) Atualiza requirements.txt
+echo "🧾 Atualizando requirements.txt"
+python3 -m pip freeze > requirements.txt
+
+echo "✅ Pronto! ($(wc -l < requirements.txt) dependências registradas)"
