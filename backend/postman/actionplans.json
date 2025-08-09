@@ -1,0 +1,94 @@
+{
+  "info": {
+    "name": "FS3M Backend - Action Plans",
+    "_postman_id": "fs3m-actions",
+    "description": "Rotas para planos de ação, com auth JWT.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/auth/token/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "auth", "token"]
+        }
+      }
+    },
+    {
+      "name": "Action Plans",
+      "item": [
+        {
+          "name": "Plans - List (by Form)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer <access_token_aqui>" }],
+            "url": {
+              "raw": "http://localhost:8000/api/actionplans/?formularioRespondidoId={{formulario_id}}",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "actionplans"],
+              "query": [{ "key": "formularioRespondidoId", "value": "{{formulario_id}}" }]
+            }
+          }
+        },
+        {
+          "name": "Plans - Create / Upsert (by creator)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer <access_token_aqui>" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observacoes\": \"Plano focado em PR e DE\",\n  \"recomendacoes_ordem\": [\n    101,\n    95,\n    77\n  ],\n  \"prazo\": \"90 dias\",\n  \"gravidade\": \"Alta\",\n  \"urgencia\": \"Alta\",\n  \"categoria\": \"NIST PR/DE\",\n  \"orcamentoMax\": \"R$ 50.000\",\n  \"formularioRespondidoId\": {{formulario_id}}\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/api/actionplans/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "actionplans"]
+            }
+          }
+        },
+        {
+          "name": "Plans - Kanban Update (status & order)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer <access_token_aqui>" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dados\": [\n    {\"plano_id\": {{plano_id}}, \"recomendacao_id\": 101, \"status\": \"Em Progresso\", \"ordem\": 0},\n    {\"plano_id\": {{plano_id}}, \"recomendacao_id\": 95,  \"status\": \"A Fazer\",       \"ordem\": 1},\n    {\"plano_id\": {{plano_id}}, \"recomendacao_id\": 77,  \"status\": \"Finalizado\",    \"ordem\": 2}\n  ]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/api/actionplans/kanban/update/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "actionplans", "kanban", "update"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "formulario_id", "value": "23" },
+    { "key": "plano_id", "value": "12" }
+  ]
+}

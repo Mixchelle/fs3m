@@ -1,0 +1,136 @@
+{
+  "info": {
+    "name": "FS3M Backend - Recommendations",
+    "_postman_id": "fs3m-recs",
+    "description": "Rotas para recomendações (NIST e futuros frameworks), com auth JWT.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"123456\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/auth/token/",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api", "auth", "token"]
+        }
+      }
+    },
+    {
+      "name": "Recommendations",
+      "item": [
+        {
+          "name": "Recs - List by Client & Form",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer <access_token_aqui>" }],
+            "url": {
+              "raw": "http://localhost:8000/api/recomendacoes/{{cliente_id}}/{{formulario_id}}/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "recomendacoes", "{{cliente_id}}", "{{formulario_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Recs - Create",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer <access_token_aqui>" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Implementar política de backup\",\n  \"categoria\": \"Proteger (PR)\",\n  \"aplicabilidade\": \"Ambas\",\n  \"tecnologia\": \"Agnóstico\",\n  \"nist\": \"PR.DS-11\",\n  \"prioridade\": \"alta\",\n  \"responsavel\": \"Time de Infra\",\n  \"data_inicio\": \"2025-08-15\",\n  \"data_fim\": \"2025-10-15\",\n  \"meses\": 2,\n  \"detalhes\": \"Documentar e testar política e rotina de backup.\",\n  \"investimentos\": \"Ferramenta de backup corporativa\",\n  \"riscos\": \"Perda de dados em incidentes\",\n  \"justificativa\": \"Atende lacunas identificadas no NIST\",\n  \"observacoes\": \"Prioridade por auditoria iminente\",\n  \"urgencia\": \"4\",\n  \"gravidade\": \"4\",\n  \"cumprida\": false,\n  \"perguntaId\": \"PR.DS-11\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/api/recomendacoes/{{cliente_id}}/{{formulario_id}}/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "recomendacoes", "{{cliente_id}}", "{{formulario_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Recs - Detail (GET)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer <access_token_aqui>" }],
+            "url": {
+              "raw": "http://localhost:8000/api/recomendacoes/{{rec_id}}/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "recomendacoes", "{{rec_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Recs - Update (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer <access_token_aqui>" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prioridade\": \"media\",\n  \"observacoes\": \"Replanejado para próximo trimestre\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/api/recomendacoes/{{rec_id}}/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "recomendacoes", "{{rec_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Recs - Delete",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer <access_token_aqui>" }],
+            "url": {
+              "raw": "http://localhost:8000/api/recomendacoes/{{rec_id}}/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "recomendacoes", "{{rec_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Recs - Check Missing (<3)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer <access_token_aqui>" }],
+            "url": {
+              "raw": "http://localhost:8000/api/formularios/{{formulario_id}}/verificar-recomendacoes/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["api", "formularios", "{{formulario_id}}", "verificar-recomendacoes"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "cliente_id", "value": "1" },
+    { "key": "formulario_id", "value": "23" },
+    { "key": "rec_id", "value": "101" }
+  ]
+}

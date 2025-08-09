@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     "responses",
     "frameworks",
     "assessments.apps.AssessmentsConfig",
+    "recommendations",
+    "actionplans",
 ]
 
 # ========= Fernet (campos criptografados) =========
