@@ -1,0 +1,212 @@
+{
+  "info": {
+    "name": "FS3M Backend - Responses API",
+    "_postman_id": "fs3m-responses-api",
+    "description": "Rotas para submissões (Submissions) e respostas (Answers) de formulários.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "access", "value": "<coloque_seu_access_token_aqui>" },
+    { "key": "submission_id", "value": "" },
+    { "key": "answer_id", "value": "" },
+    { "key": "customer_id", "value": "" },
+    { "key": "framework_id", "value": "" },
+    { "key": "template_id", "value": "" },
+    { "key": "question_id", "value": "" },
+    { "key": "question_id_politica", "value": "" },
+    { "key": "question_id_pratica", "value": "" },
+    { "key": "question_id_info", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Submissions - Listar (todos)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": { "raw": "{{baseUrl}}/api/responses/submissions/", "host": ["{{baseUrl}}"], "path": ["api","responses","submissions",""] }
+      }
+    },
+    {
+      "name": "Submissions - Listar (por cliente & framework)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/responses/submissions/?customer={{customer_id}}&framework={{framework_id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","responses","submissions",""],
+          "query": [
+            { "key": "customer", "value": "{{customer_id}}" },
+            { "key": "framework", "value": "{{framework_id}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Submissions - Detalhar (id)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": { "raw": "{{baseUrl}}/api/responses/submissions/{{submission_id}}/", "host": ["{{baseUrl}}"], "path": ["api","responses","submissions","{{submission_id}}",""] }
+      }
+    },
+    {
+      "name": "Submissions - Criar",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customer\": {{customer_id}},\n  \"template\": {{template_id}},\n  \"framework\": {{framework_id}},\n  \"version\": 1,\n  \"status\": \"draft\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/responses/submissions/", "host": ["{{baseUrl}}"], "path": ["api","responses","submissions",""] }
+      }
+    },
+    {
+      "name": "Submissions - Atualizar status (PATCH -> submitted)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"status\": \"submitted\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/responses/submissions/{{submission_id}}/", "host": ["{{baseUrl}}"], "path": ["api","responses","submissions","{{submission_id}}",""] }
+      }
+    },
+    {
+      "name": "Submissions - Recalcular Progresso (action)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": { "raw": "{{baseUrl}}/api/responses/submissions/{{submission_id}}/recalc_progress/", "host": ["{{baseUrl}}"], "path": ["api","responses","submissions","{{submission_id}}","recalc_progress",""] }
+      }
+    },
+    {
+      "name": "Answers - Listar por Submission",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/responses/answers/?submission={{submission_id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","responses","answers",""],
+          "query": [{ "key": "submission", "value": "{{submission_id}}" }]
+        }
+      }
+    },
+    {
+      "name": "Answers - Listar por Cliente & Framework",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/responses/answers/?submission__customer={{customer_id}}&submission__framework={{framework_id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","responses","answers",""],
+          "query": [
+            { "key": "submission__customer", "value": "{{customer_id}}" },
+            { "key": "submission__framework", "value": "{{framework_id}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Answers - Criar/Atualizar (genérico JSON)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"submission\": {{submission_id}},\n  \"question\": {{question_id}},\n  \"value\": {\"type\": \"scale\", \"value\": 3},\n  \"score\": 3,\n  \"evidence\": \"Exemplo de evidência.\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/responses/answers/", "host": ["{{baseUrl}}"], "path": ["api","responses","answers",""] }
+      }
+    },
+    {
+      "name": "Answers (NIST) - Política (escala 1..5)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"submission\": {{submission_id}},\n  \"question\": {{question_id_politica}},\n  \"value\": {\"type\": \"scale\", \"value\": 4},\n  \"score\": 4\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/responses/answers/", "host": ["{{baseUrl}}"], "path": ["api","responses","answers",""] }
+      }
+    },
+    {
+      "name": "Answers (NIST) - Prática (escala 1..5)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"submission\": {{submission_id}},\n  \"question\": {{question_id_pratica}},\n  \"value\": {\"type\": \"scale\", \"value\": 3},\n  \"score\": 3\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/responses/answers/", "host": ["{{baseUrl}}"], "path": ["api","responses","answers",""] }
+      }
+    },
+    {
+      "name": "Answers (NIST) - Info Complementares (texto)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"submission\": {{submission_id}},\n  \"question\": {{question_id_info}},\n  \"value\": {\"type\": \"text\", \"value\": \"Observações e links\"},\n  \"evidence\": \"Evidências livres (se preferir, use este campo)\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/responses/answers/", "host": ["{{baseUrl}}"], "path": ["api","responses","answers",""] }
+      }
+    },
+    {
+      "name": "Answers - Upload de Anexo (multipart)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "submission", "value": "{{submission_id}}", "type": "text" },
+            { "key": "question", "value": "{{question_id}}", "type": "text" },
+            { "key": "value", "value": "{\"type\":\"file\",\"value\":\"attachment\"}", "type": "text" },
+            { "key": "attachment", "type": "file", "src": "/absolute/path/do/arquivo.pdf" }
+          ]
+        },
+        "url": { "raw": "{{baseUrl}}/api/responses/answers/", "host": ["{{baseUrl}}"], "path": ["api","responses","answers",""] }
+      }
+    },
+    {
+      "name": "Answers - Detalhar (id)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": { "raw": "{{baseUrl}}/api/responses/answers/{{answer_id}}/", "host": ["{{baseUrl}}"], "path": ["api","responses","answers","{{answer_id}}",""] }
+      }
+    },
+    {
+      "name": "Answers - Remover (id)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": { "raw": "{{baseUrl}}/api/responses/answers/{{answer_id}}/", "host": ["{{baseUrl}}"], "path": ["api","responses","answers","{{answer_id}}",""] }
+      }
+    }
+  ]
+}

@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.postgres",
+    "django_filters",
 
     # 3rd-party
     "rest_framework",
@@ -38,7 +39,11 @@ INSTALLED_APPS = [
 
     # Local
     "users",
+    "responses",
     "frameworks",
+    "assessments",
+
+
 ]
 
 # ========= Fernet (campos criptografados) =========

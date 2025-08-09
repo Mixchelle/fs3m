@@ -1,0 +1,45 @@
+{
+  "info": {
+    "name": "FS3M Backend - Assessments API",
+    "_postman_id": "fs3m-assessments-api",
+    "description": "Rotas para executar e consultar avaliações (assessments) por Submission.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "access", "value": "<coloque_seu_access_token_aqui>" },
+    { "key": "submission_id", "value": "" },
+    { "key": "type", "value": "maturity-1-5" }
+  ],
+  "item": [
+    {
+      "name": "Assessments - Run (POST) com tipo na query",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/assessments/run/{{submission_id}}/?type={{type}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","assessments","run","{{submission_id}}",""],
+          "query": [{ "key": "type", "value": "{{type}}" }]
+        }
+      }
+    },
+    {
+      "name": "Assessments - Run (POST) usando default do framework",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access}}" }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/assessments/run/{{submission_id}}/",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","assessments","run","{{submission_id}}",""]
+        }
+      }
+    }
+  ]
+}
