@@ -1,0 +1,113 @@
+{
+  "info": {
+    "name": "FS3M Backend - Frameworks API",
+    "_postman_id": "fs3m-frameworks-api",
+    "description": "Rotas de leitura para frameworks, domínios, controles, perguntas e templates.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000" },
+    { "key": "access", "value": "<coloque_seu_access_token_aqui>" }
+  ],
+  "item": [
+    {
+      "name": "Frameworks - Listar",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": { "raw": "{{baseUrl}}/api/frameworks/frameworks/", "host": ["{{baseUrl}}"], "path": ["api", "frameworks", "frameworks", ""] }
+      }
+    },
+    {
+      "name": "Frameworks - Buscar por slug (nist-csf-2-pt)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/frameworks/frameworks/?slug=nist-csf-2-pt",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","frameworks","frameworks",""],
+          "query": [{ "key": "slug", "value": "nist-csf-2-pt" }]
+        }
+      }
+    },
+    {
+      "name": "Domínios - Por framework (id)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/frameworks/domains/?framework={{framework_id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","frameworks","domains",""],
+          "query": [{ "key": "framework", "value": "{{framework_id}}" }]
+        },
+        "description": "Defina {{framework_id}} com o id retornado em Frameworks - Listar."
+      }
+    },
+    {
+      "name": "Controles - Por framework (id) e domínio (id)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/frameworks/controls/?framework={{framework_id}}&domain={{domain_id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","frameworks","controls",""],
+          "query": [
+            { "key": "framework", "value": "{{framework_id}}" },
+            { "key": "domain", "value": "{{domain_id}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Perguntas - Por controle (id)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/frameworks/questions/?control={{control_id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","frameworks","questions",""],
+          "query": [{ "key": "control", "value": "{{control_id}}" }]
+        }
+      }
+    },
+    {
+      "name": "Templates - Listar",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": { "raw": "{{baseUrl}}/api/frameworks/templates/", "host": ["{{baseUrl}}"], "path": ["api","frameworks","templates",""] }
+      }
+    },
+    {
+      "name": "Template Items - Por template (id)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/frameworks/template-items/?template={{template_id}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","frameworks","template-items",""],
+          "query": [{ "key": "template", "value": "{{template_id}}" }]
+        }
+      }
+    },
+    {
+      "name": "Atalho: Itens do Template NIST (slug)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/frameworks/templates/?slug=nist-csf-2-pt-maturidade",
+          "host": ["{{baseUrl}}"],
+          "path": ["api","frameworks","templates",""],
+          "query": [{ "key": "slug", "value": "nist-csf-2-pt-maturidade" }]
+        },
+        "description": "1) Pegue o id do template\n2) Chame 'Template Items - Por template (id)'."
+      }
+    }
+  ]
+}

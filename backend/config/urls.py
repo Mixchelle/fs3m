@@ -10,4 +10,6 @@ urlpatterns = [
     # Apps
     path("api/users/", include("users.urls")),
     path("api/auth/", include("users.auth_urls")),
+    path("api/frameworks/", include("frameworks.urls")),
+
 ]

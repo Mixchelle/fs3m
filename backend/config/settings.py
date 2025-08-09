@@ -1,27 +1,22 @@
 # config/settings.py
 from pathlib import Path
 from datetime import timedelta
-import os
 import environ
+import os
 
 # ========= Paths & Env =========
 BASE_DIR = Path(__file__).resolve().parent.parent
-env = environ.Env(
-    DEBUG=(bool, True),
-    SECRET_KEY=(str, "dev-secret"),
-    ALLOWED_HOSTS=(list, ["*"]),
-    DB_URL=(str, f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
-    CORS_ALLOW_ALL_ORIGINS=(bool, True),     # dev default
-    CORS_ALLOWED_ORIGINS=(list, []),         # prod/preview: ["https://app.seu-dominio.com"]
-    CSRF_TRUSTED_ORIGINS=(list, []),         # ["https://app.seu-dominio.com"]
-    FERNET_KEYS=(str, ""),                   # "key1,key2"
-)
+env = environ.Env()
+# Lê .env se existir
 if (BASE_DIR / ".env").exists():
     environ.Env.read_env(BASE_DIR / ".env")
 
-DEBUG = env("DEBUG")
-SECRET_KEY = env("SECRET_KEY")
-ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+# Flags básicas
+DEBUG = env.bool("DEBUG", True)
+SECRET_KEY = env.str("SECRET_KEY", "dev-secret")
+
+# Hosts
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 # ========= Apps =========
 INSTALLED_APPS = [
@@ -43,11 +38,11 @@ INSTALLED_APPS = [
 
     # Local
     "users",
-    "formularios",  # <- novo app que vamos criar
+    "frameworks",
 ]
 
 # ========= Fernet (campos criptografados) =========
-FERNET_KEYS = [k.strip() for k in env("FERNET_KEYS").split(",") if k.strip()]
+FERNET_KEYS = [k.strip() for k in env.str("FERNET_KEYS", "").split(",") if k.strip()]
 
 # ========= Middleware =========
 MIDDLEWARE = [
@@ -66,8 +61,23 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # ========= Database =========
-DATABASES = {"default": env.db("DB_URL")}
-# Forçar TLS no Postgres em produção, se aplicável
+# Se houver DB_URL no .env, usa ele. Senão, usa Postgres local padrão.
+DB_URL = env.str("DB_URL", default="")
+if DB_URL:
+    DATABASES = {"default": env.db("DB_URL")}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env.str("POSTGRES_DB", "fs3m"),
+            "USER": env.str("POSTGRES_USER", "fs3m_user"),
+            "PASSWORD": env.str("POSTGRES_PASSWORD", "fs3m_pass"),
+            "HOST": env.str("POSTGRES_HOST", "127.0.0.1"),
+            "PORT": env.int("POSTGRES_PORT", 5432),
+        }
+    }
+
+# Força TLS no Postgres em produção, se aplicável
 if not DEBUG and DATABASES["default"]["ENGINE"].endswith("postgresql"):
     DATABASES["default"].setdefault("OPTIONS", {})
     DATABASES["default"]["OPTIONS"].setdefault("sslmode", "require")
@@ -81,7 +91,6 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    # Rate limiting básico (ajuste conforme necessidade)
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.UserRateThrottle",
         "rest_framework.throttling.AnonRateThrottle",
@@ -111,15 +120,26 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ========= CORS / CSRF =========
-CORS_ALLOW_ALL_ORIGINS = env("CORS_ALLOW_ALL_ORIGINS") if DEBUG else False
-CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOWED_ORIGINS = []
+    CSRF_TRUSTED_ORIGINS = [
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
+    CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
 CORS_ALLOW_CREDENTIALS = True
-CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
 
 # ========= drf-spectacular =========
 SPECTACULAR_SETTINGS = {
     "TITLE": "FS3M API v2",
-    "DESCRIPTION": "Backend reestruturado (users + formulários).",
+    "DESCRIPTION": "Backend reestruturado (users + frameworks).",
     "VERSION": "2.0.0",
 }
 
@@ -141,7 +161,7 @@ AUTH_PASSWORD_VALIDATORS = [] if DEBUG else [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# ========= Templates (necessário para /admin) =========
+# ========= Templates =========
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
