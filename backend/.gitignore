@@ -1,2 +1,40 @@
-.venv
+# Arquivos compilados do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenv
+.venv/
+env/
+venv/
+
+# Arquivos de ambiente
 .env
+.env.*
+
+# Arquivos temporários
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.sqlite3
+
+# Cache de ferramentas
+.cache/
+.coverage
+*.cover
+htmlcov/
+
+# Configurações do editor/IDE
+.vscode/
+.idea/
+
+# Migrations (exceto __init__.py)
+*/migrations/*
+!*/migrations/__init__.py
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db

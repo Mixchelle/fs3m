@@ -3,6 +3,7 @@ from django.db import transaction
 from django.contrib.auth import get_user_model
 from decimal import Decimal
 import random
+from collections import defaultdict
 
 from frameworks.models import FormTemplate, Question, ChoiceOption
 from responses.models import Submission, Answer
@@ -40,14 +41,13 @@ class Command(BaseCommand):
         # um analista (opcional para assigned_to)
         analista = User.objects.filter(email="analista@fs3m.com").first()
 
-        # cria submissions por cliente e por template
         total_answers = 0
         for cli in clientes:
             for template in (t_nist, t_infra):
                 sub, created = Submission.objects.get_or_create(
                     customer=cli,
                     template=template,
-                    framework=template.framework,  # coerente
+                    framework=template.framework,
                     version=1,
                     defaults={
                         "status": "draft",
@@ -65,26 +65,20 @@ class Command(BaseCommand):
                         f"Submission já existia: {cli.email} / {template.slug}"
                     )
 
-                # perguntas deste template
-                # (perguntas = todas dos controles do template)
-                qset = (
-                    Question.objects.filter(control__in=template.controls.all())
-                    .select_related("control")
-                    .order_by("control__domain__order", "control__order", "order", "id")
-                )
+                # Preencher respostas conforme o template
+                if template.slug == "nist-csf-2-pt-maturidade":
+                    qs = (
+                        Question.objects.filter(control__in=template.controls.all())
+                        .select_related("control")
+                    )
+                    by_control = defaultdict(dict)
+                    for q in qs:
+                        by_control[q.control_id][q.local_code] = q
 
-                # preenche algumas respostas (não todas, para simular progresso)
-                # 60% das questões respondidas
-                questions = list(qset)
-                random.shuffle(questions)
-                target = int(len(questions) * 0.6)
-
-                for q in questions[:target]:
-                    # NIST: primeira pergunta é scale 1..5 (local_code="score")
-                    # Infra: primeira pergunta é choice yes/partial/no/na (local_code="status")
-                    # dentro do for q in questions[:target]:
-                    if template.slug == "nist-csf-2-pt-maturidade":
-                        if q.local_code in ("policy", "practice"):
+                    for control_id, qmap in by_control.items():
+                        # score
+                        q = qmap.get("score")
+                        if q:
                             val = random.randint(1, 5)
                             Answer.objects.update_or_create(
                                 submission=sub,
@@ -92,27 +86,70 @@ class Command(BaseCommand):
                                 defaults={
                                     "value": {"type": "scale", "value": val},
                                     "score": Decimal(str(val)),
-                                    "evidence": f"Auto-seed {q.local_code} nível {val}.",
+                                    "evidence": f"Seed score nível {val}.",
                                 },
                             )
                             total_answers += 1
 
-                        elif q.local_code == "info":
+                        # politica
+                        q = qmap.get("politica")
+                        if q:
+                            val = random.randint(1, 5)
                             Answer.objects.update_or_create(
                                 submission=sub,
                                 question=q,
                                 defaults={
-                                    "value": {
-                                        "type": "text",
-                                        "value": "Notas e links (seed).",
-                                    },
+                                    "value": {"type": "scale", "value": val},
+                                    "score": Decimal(str(val)),
+                                    "evidence": f"Seed política nível {val}.",
+                                },
+                            )
+                            total_answers += 1
+
+                        # pratica
+                        q = qmap.get("pratica")
+                        if q:
+                            val = random.randint(1, 5)
+                            Answer.objects.update_or_create(
+                                submission=sub,
+                                question=q,
+                                defaults={
+                                    "value": {"type": "scale", "value": val},
+                                    "score": Decimal(str(val)),
+                                    "evidence": f"Seed prática nível {val}.",
+                                },
+                            )
+                            total_answers += 1
+
+                        # evidence
+                        q = qmap.get("evidence")
+                        if q:
+                            Answer.objects.update_or_create(
+                                submission=sub,
+                                question=q,
+                                defaults={
+                                    "value": {"type": "text", "value": "Evidências complementares (seed)."},
+                                    "evidence": "Registro de evidências (seed).",
+                                },
+                            )
+                            total_answers += 1
+
+                        # info
+                        q = qmap.get("info")
+                        if q:
+                            Answer.objects.update_or_create(
+                                submission=sub,
+                                question=q,
+                                defaults={
+                                    "value": {"type": "text", "value": "Notas e links (seed)."},
                                     "evidence": "Informações complementares cadastradas pelo seed.",
                                 },
                             )
                             total_answers += 1
 
-                        elif q.local_code == "attachment":
-                            # você pode só registrar metadado; upload real via API de answers com multipart
+                        # attachment
+                        q = qmap.get("attachment")
+                        if q:
                             Answer.objects.update_or_create(
                                 submission=sub,
                                 question=q,
@@ -123,7 +160,12 @@ class Command(BaseCommand):
                             )
                             total_answers += 1
 
-                    elif template.slug == "infraestrutura-basico":
+                elif template.slug == "infraestrutura-basico":
+                    qset = (
+                        Question.objects.filter(control__in=template.controls.all())
+                        .select_related("control")
+                    )
+                    for q in qset:
                         if q.local_code == "status":
                             choice_pool = ["yes", "partial", "no", "na"]
                             pick = random.choice(choice_pool)
@@ -149,59 +191,18 @@ class Command(BaseCommand):
                             )
                             total_answers += 1
 
-                        elif q.local_code == "evidence" or q.local_code == "info":
+                        elif q.local_code in ("evidence", "info"):
                             Answer.objects.update_or_create(
                                 submission=sub,
                                 question=q,
                                 defaults={
-                                    "value": {
-                                        "type": "text",
-                                        "value": "Registro de evidências (seed).",
-                                    },
+                                    "value": {"type": "text", "value": "Registro de evidências (seed)."},
                                     "evidence": "Evidências complementares.",
                                 },
                             )
                             total_answers += 1
 
-                    elif template.slug == "infraestrutura-basico":
-                        if q.local_code == "status":
-                            choice_pool = ["yes", "partial", "no", "na"]
-                            pick = random.choice(choice_pool)
-
-                            # score baseado no weight (se existir)
-                            weight = None
-                            try:
-                                opt = ChoiceOption.objects.get(question=q, value=pick)
-                                weight = opt.weight
-                            except ChoiceOption.DoesNotExist:
-                                pass
-
-                            Answer.objects.update_or_create(
-                                submission=sub,
-                                question=q,
-                                defaults={
-                                    "value": {"type": "choice", "value": pick},
-                                    "score": (
-                                        Decimal(str(weight))
-                                        if weight is not None
-                                        else None
-                                    ),
-                                    "evidence": f"Status {pick} (seed).",
-                                },
-                            )
-                            total_answers += 1
-                        elif q.local_code == "evidence":
-                            Answer.objects.update_or_create(
-                                submission=sub,
-                                question=q,
-                                defaults={
-                                    "value": {"type": "text", "value": ""},
-                                    "evidence": "Registro de evidências (seed).",
-                                },
-                            )
-                            total_answers += 1
-
-                # recalcula progresso ao final
+                # Recalcular progresso
                 sub.recalc_progress(commit=True)
 
         self.stdout.write(
