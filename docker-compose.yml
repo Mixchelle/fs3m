@@ -1,4 +1,3 @@
-# ./docker-compose.yml
 services:
   postgres:
     image: postgres:16
@@ -17,9 +16,38 @@ services:
       timeout: 5s
       retries: 20
 
+  backend:
+    build: ./backend
+    container_name: fs3m_backend
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DB_URL: postgres://fs3m_user:fs3m_pass@postgres:5432/fs3m
+      SECRET_KEY: your_secret_key_here
+      DEBUG: "True"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    container_name: fs3m_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+
 networks:
   default:
     name: fs3m_net
 
 volumes:
   postgres_data:
+
+

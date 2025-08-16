@@ -35,8 +35,8 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
-    "drf_spectacular",
 
+    "drf_yasg",
     # Local
     "users",
     "responses",
@@ -95,7 +95,6 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.UserRateThrottle",
         "rest_framework.throttling.AnonRateThrottle",
@@ -143,9 +142,20 @@ CORS_ALLOW_CREDENTIALS = True
 
 # ========= drf-spectacular =========
 SPECTACULAR_SETTINGS = {
-    "TITLE": "FS3M API v2",
-    "DESCRIPTION": "Backend reestruturado (users + frameworks).",
-    "VERSION": "2.0.0",
+    "TITLE": "Projeto FS3M",
+    "DESCRIPTION": "Documentação da API para a CyberSec Maturity Platform",
+    "VERSION": "v1",
+    # Exemplo de segurança (JWT via Authorization: Bearer <token>)
+    "SECURITY": [{"BearerAuth": []}],
+    "COMPONENTS": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+            }
+        }
+    },
 }
 
 # ========= Segurança (produção) =========

@@ -196,7 +196,7 @@ class FrameworkReadSerializer(serializers.ModelSerializer):
 
 
 class FrameworkDetailSerializer(FrameworkReadSerializer):
-    domains = DomainReadSerializer(many=True, read_only=True, source="domains")
+    domains = DomainReadSerializer(many=True, read_only=True)
 
     class Meta(FrameworkReadSerializer.Meta):
         fields = FrameworkReadSerializer.Meta.fields + ["domains"]
