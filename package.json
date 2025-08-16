@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "backend:setup": "bash -lc 'cd backend && [ -d .venv ] || python3 -m venv .venv && .venv/bin/pip install --upgrade pip && .venv/bin/pip install -r requirements.txt'",
+    "backend:migrate": "bash -lc 'cd backend && .venv/bin/python manage.py migrate'",
+    "backend:run": "bash -lc \"cd backend && export DJANGO_SETTINGS_MODULE=config.settings && .venv/bin/python manage.py runserver 0.0.0.0:8000\"",
+    "backend:createsuperuser": "bash -lc 'cd backend && .venv/bin/python manage.py createsuperuser'"
   },
   "author": "",
   "license": "ISC"

@@ -1,0 +1,22 @@
+export type Recommendation = {
+  id: number;
+  nome: string;
+  categoria: string;
+  aplicabilidade: "Política" | "Prática" | "Ambas";
+  tecnologia: string;
+  nist: string;
+  prioridade: "baixa" | "media" | "alta";
+  responsavel: string;
+  data_inicio: string;
+  data_fim: string;
+  meses: number;
+  detalhes: string;
+  investimentos: string;
+  riscos: string;
+  justificativa: string;
+  observacoes: string;
+  urgencia: "1"|"2"|"3"|"4"|"5";
+  gravidade: "1"|"2"|"3"|"4"|"5";
+  cumprida: boolean;
+  perguntaId: string;
+};

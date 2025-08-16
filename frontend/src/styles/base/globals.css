@@ -1,0 +1,45 @@
+
+
+/* imports dos seus CSS globais */
+@import "./sideBar.css";
+@import "./Header.css";
+
+/* CSS vars (light/dark) */
+:root {
+  --header-h: 56px;
+  --sidebar-w: 260px;
+}
+
+
+.letter { color: #6b6b6b; }
+.letter-3 { color: #ffa800; }
+
+/* MAIN */
+.main-content {
+  flex: 1;
+  padding: 1rem;
+  background: #1266b9;
+  color: #333;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  margin-top: 60px;
+  margin-left: 160px;
+  transition: margin-left 0.3s ease-in-out;
+  overflow-y: auto;
+  -ms-overflow-style: none; 
+  margin-left: 500px;
+  width: 100vh;
+  height: 100vh;
+}
+
+/* esconder barra em Chrome/Safari */
+.main-content::-webkit-scrollbar { display: none; }
+
+.main-content-collapsed {
+  margin-left: 80px;
+  flex: 1;
+  padding: 20px;
+  margin-top: 60px;
+  height: 100vh;
+  transition: margin-left 0.3s ease-in-out;
+}

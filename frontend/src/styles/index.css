@@ -1,0 +1,20 @@
+/* src/styles/index.css */
+
+/* Base */
+@import './base/globals.css';
+@import './base/Header.css';
+@import './base/sideBar.css';
+@import './base/ThemeSwitch.css';
+
+/* Components */
+@import './components/cadastro.css';
+@import './components/layout.css';
+
+/* Pages */
+@import './pages/login.css';
+
+
+    
+.pao{
+background-color: blue;
+}

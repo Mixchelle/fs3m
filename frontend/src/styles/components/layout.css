@@ -1,0 +1,9 @@
+.header {
+  @apply h-[var(--header-h)] border-b bg-card;
+}
+.sidebar {
+  @apply w-[var(--sidebar-w)] border-r bg-card;
+}
+.content {
+  @apply flex-1 p-4;
+}

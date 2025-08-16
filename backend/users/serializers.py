@@ -99,7 +99,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         fields = [
             "id", "email", "nome", "role", "password",
             "cliente", "gestor_referente", "formularios_ids",
-            "is_2fa_enabled",  # permitir já criar com 2FA habilitado (secret pode ser gerado depois)
+            "is_2fa_enabled",  "empresas" # permitir já criar com 2FA habilitado (secret pode ser gerado depois)
         ]
 
     def validate_email(self, value: str):
@@ -150,7 +150,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         fields = [
             "email", "nome", "role", "is_active", "password",
             "cliente", "gestor_referente", "formularios_ids",
-            "is_2fa_enabled",
+            "is_2fa_enabled", "empresas"
         ]
 
     def validate_email(self, value: str):

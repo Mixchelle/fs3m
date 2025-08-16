@@ -1,0 +1,337 @@
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+function isPdf(buf) {
+  return (
+    buf && buf.length > 10 && buf.slice(0, 5).toString('ascii') === '%PDF-'
+  );
+}
+
+function normalizeText(s) {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Varre o PDF, pega streams Flate e tenta desinflar para texto legível */
+function inflateFlateStreamsToText(buf) {
+  const raw = buf.toString('latin1');
+  // Tolerante a \n ou \r\n após "stream"
+  const re = /\/FlateDecode[\s\S]*?stream\r?\n([\s\S]*?)endstream/gi;
+
+  let m;
+  let total = 0,
+    ok = 0;
+  const parts = [];
+
+  while ((m = re.exec(raw)) !== null) {
+    total++;
+    const bodyLatin1 = m[1];
+    const comp = Buffer.from(bodyLatin1, 'latin1');
+    try {
+      const inflated = zlib.inflateSync(comp);
+      ok++;
+      parts.push(inflated.toString('latin1'));
+    } catch (e) {
+      console.warn(`[PDF] Falha ao inflar stream #${total}: ${e.message}`);
+    }
+  }
+  console.log(
+    `[PDF] Streams Flate encontrados=${total}, inflados com sucesso=${ok}`
+  );
+  return parts.join('\n');
+}
+
+/** Extrai campos do PDF da Vinhedo lendo os streams Flate */
+/** Extrai campos do PDF da Vinhedo lendo os streams Flate */
+function escapeRegex(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Extrai dados mínimos e verifica se o codigoEsperado aparece no PDF */
+function extrairCamposVinhedo(buf, codigoEsperado) {
+  console.log(
+    '#####################################CHAMOU#######################################33'
+  );
+
+  const out = {
+    ehPdf: isPdf(buf),
+    temPagina: false,
+    encontrouCodigo: false, // <=== O QUE VOCÊ QUER USAR
+    codigoEsperado: codigoEsperado || null,
+    codigoAutenticacao: null, // só para log/debug
+    contextoCodigo: null, // trecho do texto onde apareceu
+  };
+
+  if (!out.ehPdf) {
+    console.log('[PDF] Não é PDF válido.');
+    return out;
+  }
+
+  const rawHeader = buf.toString('latin1');
+  out.temPagina = /\/Type\s*\/Page/i.test(rawHeader);
+  console.log('[PDF] temPagina =', out.temPagina);
+
+  const inflated = inflateFlateStreamsToText(buf);
+  const norm = normalizeText(inflated || '');
+  console.log('[PDF][NORM PREVIEW]', norm.slice(0, 300));
+
+  // 1) (opcional) capturar "código de autenticação/verificação" – útil pra log
+  const mCod = norm.match(
+    /codigo\s+de\s+(?:autenticacao|verificacao)(?:\s+da\s+nfse)?\s*[:\-]?\s*([a-z0-9]{4,})/i
+  );
+  if (mCod) {
+    out.codigoAutenticacao = mCod[1];
+    const i = Math.max(0, mCod.index - 30);
+    const j = Math.min(norm.length, mCod.index + (mCod[0]?.length || 0) + 30);
+    console.log(
+      '[PDF] codigoAutenticacao encontrado =',
+      out.codigoAutenticacao
+    );
+    console.log('[PDF] contexto(codigoAutenticacao)=', norm.slice(i, j));
+  } else {
+    console.log('[PDF] codigoAutenticacao NÃO encontrado.');
+  }
+
+  // 2) PROCURAR EXATAMENTE O codigoEsperado no texto normalizado
+  if (codigoEsperado) {
+    const alvo = String(codigoEsperado).toLowerCase().trim();
+
+    // \b evita casar dentro de outras palavras (se o padrão for alfanumérico)
+    const re = new RegExp(`\\b${escapeRegex(alvo)}\\b`, 'i');
+    const hit = re.exec(norm);
+
+    if (hit) {
+      out.encontrouCodigo = true;
+      const i = Math.max(0, (hit.index ?? 0) - 40);
+      const j = Math.min(
+        norm.length,
+        (hit.index ?? 0) + (hit[0]?.length || 0) + 40
+      );
+      out.contextoCodigo = norm.slice(i, j);
+      console.log('[PDF] codigoEsperado encontrado no PDF:', codigoEsperado);
+      console.log('[PDF] contexto(codigoEsperado)=', out.contextoCodigo);
+    } else {
+      console.log(
+        '[PDF] codigoEsperado NÃO encontrado no PDF:',
+        codigoEsperado
+      );
+    }
+  } else {
+    console.log('[PDF] codigoEsperado não informado — nada para procurar.');
+  }
+
+  return out;
+}
+
+/* ------------------------------------------- */
+
+// util pra pegar codigo da URL (quando vier via props.link)
+function getCodigoFromUrl(url) {
+  try {
+    const u = new URL(url);
+    return u.searchParams.get('codigo') || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function EnviarEmailPDFBoleto(props) {
+  const { numeroNfse } = props;
+  console.log('[INICIO] EnviarEmailPDFBoleto', props);
+
+  try {
+    console.log('[BUSCA] Buscando nota e boletos no banco...');
+    const buscar = await buscaNfsePorNota(numeroNfse);
+    if (!buscar || !buscar.length)
+      throw new Error('Nota não encontrada no banco.');
+
+    const boletosNota = await buscaBoletoNumero(numeroNfse, 'NFSE');
+    console.log('[BUSCA] boletosNota:', boletosNota?.length || 0);
+
+    let idIntegracao;
+    if (boletosNota && boletosNota.length > 0) {
+      idIntegracao = boletosNota.map((b) => b.idIntegracao);
+      console.log('[INFO] idIntegracao:', idIntegracao);
+    }
+
+    // Destinatários
+    let copiasEmail = Array.isArray(props.copiasEmail)
+      ? [...props.copiasEmail]
+      : [];
+    if (
+      (!copiasEmail || copiasEmail.length === 0) &&
+      buscar[0].copiasEmail &&
+      buscar[0].copiasEmail.length
+    ) {
+      copiasEmail = [...buscar[0].copiasEmail];
+    }
+    const destinatarios = copiasEmail;
+    console.log('[INFO] Destinatários:', destinatarios);
+
+    // Dados do e-mail
+    const empresa = buscar[0].payload.tomadorRazaoSocial;
+    const cedente = buscar[0].payload.cedente;
+
+    const detalhesParcelas =
+      (buscar[0].payload.pagamentos && buscar[0].payload.pagamentos.receber) ||
+      [];
+    const detalhes = detalhesParcelas.map((parcela) => ({
+      valor: parcela.valor,
+      vencimento: parcela.data_vencimento,
+    }));
+    console.log('[INFO] Detalhes das parcelas:', detalhes);
+    const quantidadeParcelas = detalhesParcelas.length;
+
+    // PDFs dos boletos (aguarda mesmo)
+    const boletos = [];
+    if (idIntegracao && idIntegracao.length) {
+      console.log('[BUSCA] Baixando PDFs dos boletos...');
+      const anexos = await Promise.all(
+        idIntegracao.map(async (idInt) => {
+          const id = [idInt];
+          const pdfBoleto = await BilletsService.GetPdf(id, cedente);
+          console.log(`[OK] PDF do boleto ${idInt} baixado.`);
+          return pdfBoleto;
+        })
+      );
+      anexos.forEach((resp) => boletos.push({ anexo: resp }));
+    }
+
+    // ===== Montar link da Vinhedo e definir codigoEsperado com segurança =====
+    let link = props.link;
+    let codigoEsperado = buscar[0].codigo_prefeitura || null;
+    console.log('codigoEsperado', codigoEsperado);
+    if (!link) {
+      const base =
+        'http://www.nfevinhedo.com.br/usuario/nNotaFiscal/notaFiscalPdf.php';
+      link = `${base}?codigo=${encodeURIComponent(
+        codigoEsperado || ''
+      )}&exibir=1`;
+      console.log('[VINHEDO] Link montado:', link);
+    } else {
+      // se veio link por props, tenta extrair o codigo dele
+      const fromLink = getCodigoFromUrl(link);
+      if (fromLink) codigoEsperado = fromLink;
+
+      if (!/[\?&]exibir=1\b/.test(link)) {
+        console.warn(
+          '[VINHEDO] Link sem exibir=1 — adicionando para renderizar o conteúdo.'
+        );
+        const sep = link.includes('?') ? '&' : '?';
+        link = `${link}${sep}exibir=1`;
+      }
+      console.log('[VINHEDO] Link (props) em uso:', link);
+    }
+
+    if (!codigoEsperado) {
+      throw new Error('Não foi possível determinar o código esperado da NFSe.');
+    }
+    console.log('[VINHEDO] codigoEsperado:', codigoEsperado);
+
+    // ===== Polling do PDF preenchido =====
+    let attempt = 0;
+    let delay = 1500; // mais rápido no início
+    const maxDelay = 15_000; // máx 15s
+    const maxAttempts = 15; // evita loop infinito
+    let pdfNotaBuffer = null;
+
+    console.log(
+      '[WAIT] Aguardando PDF preenchido da Vinhedo (validando código e conteúdo)...'
+    );
+
+    while (attempt < maxAttempts) {
+      attempt += 1;
+      try {
+        const url = `${link}&_=${Date.now()}`; // cache-busting
+        console.log(`[TENTATIVA ${attempt}] GET: ${url}`);
+
+        const res = await axios.get(url, {
+          responseType: 'arraybuffer',
+          timeout: 20_000,
+          headers: {
+            'Cache-Control': 'no-cache',
+            Pragma: 'no-cache',
+            Accept: 'application/pdf,*/*;q=0.8',
+          },
+          validateStatus: (s) => s >= 200 && s < 600,
+        });
+
+        const buf = Buffer.from(res.data);
+
+        // Validação rápida de PDF
+        if (!isPdf(buf)) {
+          console.log('[CHECAGEM] Resposta não é PDF ainda. Re-tentando...');
+        } else {
+          const campos = extrairCamposVinhedo(buf, codigoEsperado);
+
+          console.log(
+            `[CHECAGEM] ehPdf=${campos.ehPdf}, temPagina=${campos.temPagina}, ` +
+              `encontrouCodigo=${campos.encontrouCodigo}, codigoAutenticacao=${
+                campos.codigoAutenticacao || 'N/D'
+              }`
+          );
+
+          // Critério de sucesso: PDF válido + tem página + o código bate
+          if (campos.ehPdf && campos.temPagina && campos.encontrouCodigo) {
+            console.log(
+              '[SUCESSO] PDF OK: código esperado localizado no conteúdo.'
+            );
+            const preview = buf
+              .toString('latin1')
+              .slice(0, 400)
+              .replace(/\s+/g, ' ');
+            console.log(`[PREVIEW PDF] ${preview}`);
+            pdfNotaBuffer = buf;
+            break;
+          } else {
+            console.log(
+              '[AGUARDANDO] Ainda não localizou o código no PDF. Tentando novamente...'
+            );
+          }
+        }
+      } catch (e) {
+        console.warn(
+          `[ERRO] Tentativa ${attempt} falhou: ${
+            e && e.message ? e.message : e
+          }`
+        );
+      }
+
+      const jitter = Math.floor(Math.random() * 300);
+      const waitMs = delay + jitter;
+      console.log(`[ESPERA] ${waitMs} ms até a próxima tentativa...`);
+      await sleep(waitMs);
+      delay = Math.min(Math.floor(delay * 1.7), maxDelay);
+    }
+
+    if (!pdfNotaBuffer) {
+      throw new Error(
+        'Não foi possível obter o PDF preenchido da Vinhedo dentro do limite de tentativas.'
+      );
+    }
+
+    // Enviar e-mail quando tiver PDF validado
+    console.log('[ENVIO] Enviando e-mail com nota preenchida e boletos...');
+    const respEnvio = await enviarEmailComBoleto(
+      destinatarios,
+      boletos,
+      pdfNotaBuffer, // Buffer do PDF
+      numeroNfse,
+      detalhes,
+      quantidadeParcelas,
+      empresa
+    );
+
+    console.log('[FIM] E-mail enviado com sucesso:', respEnvio);
+    return respEnvio;
+  } catch (err) {
+    console.error('[ERRO GERAL] EnviarEmailPDFBoleto:', err);
+    return { ok: false, message: 'Erro ao enviar e-mail' };
+  }
+}
+

@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@import  "../styles/index.css";
+/* === Variáveis base (Light) === */
+:root {
+  --background: #ffffff;
+  --foreground: #111827;
+
+  --card: #ffffff;
+  --muted: #f5f6f8;
+  --muted-foreground: #6b7280;
+  --border: #e5e7eb;
+
+  --primary: #6d28d9;
+
+  --status-draft: #9ca3af;
+  --status-review: #f59e0b;
+  --status-done: #10b981;
+
+  --chart-1: #9ca3af;
+  --chart-2: #f59e0b;
+  --chart-3: #10b981;
+}
+
+/* === Variáveis para Dark === */
+.dark {
+  --background: #0b0b0f;
+  --foreground: #e6e7eb;
+
+  --card: #14151a;
+  --muted: #101116;
+  --muted-foreground: #a1a1aa;
+  --border: #1f2128;
+
+  --primary: #a78bfa;
+
+  --status-draft: #a3a3a3;
+  --status-review: #fbbf24;
+  --status-done: #34d399;
+
+  --chart-1: #a3a3a3;
+  --chart-2: #fbbf24;
+  --chart-3: #34d399;
+}
+
+/* === Expor tokens para o Tailwind v4 === */
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+
+  --color-status-draft: var(--status-draft);
+  --color-status-review: var(--status-review);
+  --color-status-done: var(--status-done);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+}
+
+/* base */
+html, body, #__next { height: 100%; }
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, ui-sans-serif), system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+}

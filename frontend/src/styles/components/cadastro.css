@@ -1,0 +1,58 @@
+/* Largura e quebra para e-mail */
+.w-email { width: 28%; }
+.email-cell {
+  max-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cabeçalho “colado” no topo da tabela ao rolar */
+.cadastros-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Badges de papel */
+.role-badge {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  text-transform: lowercase;
+}
+.role-cli { background: #10B981; }   /* cliente */
+.role-sub { background: #F59E0B; }   /* subcliente */
+.role-ana { background: #3B82F6; }   /* analista */
+.role-ges { background: #8B5CF6; }   /* gestor */
+
+/* Ações */
+.th-center { text-align: center; }
+.actions-cell { text-align: center; }
+.actions-inline { display: inline-flex; gap: 8px; align-items: center; }
+.action-link {
+  color: #4f46e5; text-decoration: none; font-weight: 500;
+}
+.action-link:hover { text-decoration: underline; }
+.action-icon {
+  background: none; border: none; cursor: pointer;
+  color: #64748b; font-size: 18px; padding: 0 6px;
+}
+.action-icon:hover { color: #4f46e5; }
+
+/* Container da página mais confortável na largura */
+.cadastros-container {
+  max-width: 1100px; /* centraliza e dá “respiro” */
+}
+
+/* Ajustes de contraste/spacing */
+.cadastros-table th { letter-spacing: .4px; }
+.cadastros-table td { line-height: 1.2; }
+
+/* Responsivo: quando estreito, a tabela rola horizontalmente (já tem overflow no .table-container) */
+@media (max-width: 980px) {
+  .w-email { width: auto; }
+}

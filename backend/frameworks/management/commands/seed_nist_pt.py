@@ -1,54 +1,68 @@
+# frameworks/management/commands/reset_and_seed_nist_pt.py
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from frameworks.models import (
-    Framework,
-    Domain,
-    Control,
-    Question,
-    ChoiceOption,
-    ScoringModel,
-    FormTemplate,
-    TemplateItem,
+    Framework, Domain, Control, Question, ChoiceOption,
+    ScoringModel, FormTemplate, TemplateItem, ControlMapping
 )
+from responses.models import Submission  # Answers são apagadas por cascade via Submission
 
 
 class Command(BaseCommand):
-    help = "Seed NIST CSF 2.0 (PT-BR): domains, controls, questions (score/politica/pratica/info/attachment) e template."
+    help = "APAGA tudo de frameworks/templates/submissions e recria o NIST CSF 2.0 (PT-BR) completo."
 
     @transaction.atomic
-    def handle(self, *args, **options):
-        # ---- Framework ----
-        fw_name = "NIST CSF 2.0 (PT-BR)"
-        fw_slug = "nist-csf-2-pt"
-        framework, _ = Framework.objects.get_or_create(
-            slug=fw_slug,
+    def handle(self, *args, **opts):
+        # ============ LIMPEZA ============
+        self.stdout.write(self.style.WARNING("Limpando dados existentes..."))
+
+        # Submissions (Answers em cascade)
+        sub_deleted, _ = Submission.objects.all().delete()
+
+        # Template links / templates
+        TemplateItem.objects.all().delete()
+        FormTemplate.objects.all().delete()
+
+        # Mapeamentos entre controles
+        ControlMapping.objects.all().delete()
+
+        # Estruturas
+        ChoiceOption.objects.all().delete()
+        Question.objects.all().delete()
+        Control.objects.all().delete()
+        Domain.objects.all().delete()
+
+        # (opcional) apagar ScoringModel: descomente se quiser reset total
+        # ScoringModel.objects.all().delete()
+
+        # Frameworks
+        Framework.objects.all().delete()
+
+        self.stdout.write(self.style.SUCCESS(f"Submissions removidas: {sub_deleted}"))
+        self.stdout.write(self.style.SUCCESS("Estruturas de frameworks limpas."))
+
+        # ============ SEED NIST CSF 2.0 (PT-BR) ============
+        self.stdout.write(self.style.WARNING("Criando NIST CSF 2.0 (PT-BR)..."))
+
+        fw = Framework.objects.create(
+            slug="nist-csf-2-pt",
+            name="NIST CSF 2.0 (PT-BR)",
+            version="2.0",
+            description="Tradução PT-BR dos controles/perguntas de maturidade do NIST CSF 2.0.",
+            active=True,
+            editable=False,
+        )
+
+        scoring, _ = ScoringModel.objects.get_or_create(
+            slug="maturity-1-5",
             defaults={
-                "name": fw_name,
-                "version": "2.0",
-                "description": "Tradução PT-BR dos controles/perguntas de maturidade do NIST CSF 2.0.",
-                "active": True,
-                "editable": False,
+                "name": "Maturidade 1-5",
+                "mapping": {"Inicial": 1, "Repetido": 2, "Definido": 3, "Gerenciado": 4, "Otimizado": 5},
+                "rules": {"hint": "Mapeamento padrão de maturidade 1–5."},
             },
         )
 
-        # ---- Scoring model (maturidade 1-5) ----
-        sm_fields = {f.name for f in ScoringModel._meta.get_fields()}
-        json_field = "map" if "map" in sm_fields else ("mapping" if "mapping" in sm_fields else ("mapa" if "mapa" in sm_fields else None))
-        rules_field = "rules" if "rules" in sm_fields else ("regras" if "regras" in sm_fields else None)
-        if not json_field:
-            raise RuntimeError("ScoringModel: não encontrei o campo JSON (map/mapping/mapa).")
-        if not rules_field:
-            raise RuntimeError("ScoringModel: não encontrei o campo de regras (rules/regras).")
-
-        defaults = {
-            "name": "Maturidade 1-5",
-            json_field: {"Inicial": 1, "Repetido": 2, "Definido": 3, "Gerenciado": 4, "Otimizado": 5},
-            rules_field: {"hint": "Mapeamento padrão de maturidade 1–5."},
-        }
-        scoring, _ = ScoringModel.objects.get_or_create(slug="maturity-1-5", defaults=defaults)
-
-        # ---- Domínios (títulos amigáveis) ----
         domain_defs = {
             "GV": "Governança (GV)",
             "ID": "Identificar (ID)",
@@ -58,19 +72,10 @@ class Command(BaseCommand):
             "RC": "Recuperar (RC)",
         }
         domains = {}
-        for order, (code, title) in enumerate(domain_defs.items()):
-            d, _ = Domain.objects.get_or_create(
-                framework=framework,
-                code=code,
-                defaults={"title": title, "order": order},
-            )
-            if d.title != title or d.order != order:
-                d.title = title
-                d.order = order
-                d.save(update_fields=["title", "order"])
-            domains[code] = d
+        for i, (code, title) in enumerate(domain_defs.items()):
+            domains[code] = Domain.objects.create(framework=fw, code=code, title=title, order=i)
 
-        # ---- Controles (PT-BR) ----
+        # ===== TODOS OS CONTROLES (SEU LISTÃO) =====
         controls_pt = {
             "GV": [
                 ("GV.OC-01", "A missão organizacional é compreendida e orienta a gestão de riscos cibernéticos?"),
@@ -192,179 +197,81 @@ class Command(BaseCommand):
             ],
         }
 
-        # ---- Helpers
         def ensure_scale_options(question: Question):
-            opts = [
+            for value, label, weight, order in [
                 ("1", "Inicial", 1, 1),
                 ("2", "Repetido", 2, 2),
                 ("3", "Definido", 3, 3),
                 ("4", "Gerenciado", 4, 4),
                 ("5", "Otimizado", 5, 5),
-            ]
-            for value, label, weight, order in opts:
+            ]:
                 ChoiceOption.objects.get_or_create(
                     question=question, value=value,
                     defaults={"label": label, "weight": weight, "order": order}
                 )
 
         def scale_meta():
-            return {
-                "scale": {
-                    "min": 1,
-                    "max": 5,
-                    "labels": {"1": "Inicial", "2": "Repetido", "3": "Definido", "4": "Gerenciado", "5": "Otimizado"},
-                }
-            }
+            return {"scale": {"min": 1, "max": 5, "labels": {"1": "Inicial", "2": "Repetido", "3": "Definido", "4": "Gerenciado", "5": "Otimizado"}}}
 
-        # ---- Criar controles + questions ----
-        created_controls = 0
+        # Controles + perguntas por controle
         for dom_code, items in controls_pt.items():
             domain = domains[dom_code]
             for idx, (code, text) in enumerate(items):
-                control, _ = Control.objects.get_or_create(
-                    framework=framework,
-                    code=code,
-                    defaults={
-                        "domain": domain,
-                        "title": text,
-                        "description": "",
-                        "order": idx,
-                        "active": True,
-                    },
+                control = Control.objects.create(
+                    framework=fw, domain=domain, code=code, title=text, description="", order=idx, active=True
                 )
-                if control.domain_id != domain.id or control.order != idx:
-                    control.domain = domain
-                    control.order = idx
-                    control.save(update_fields=["domain", "order"])
-                if control.title != text:
-                    control.title = text
-                    control.save(update_fields=["title"])
-                created_controls += 1
 
-                # Q1: SCORE (escala 1–5)
-                q_score, _ = Question.objects.get_or_create(
-                    control=control,
-                    local_code="score",
-                    defaults={
-                        "prompt": "Nível de maturidade para este controle",
-                        "type": "scale",
-                        "required": True,
-                        "order": 0,
-                        "meta": scale_meta(),
-                        "scoring_model": scoring,
-                    },
+                q_score = Question.objects.create(
+                    control=control, local_code="score", prompt="Nível de maturidade para este controle",
+                    type="scale", required=True, order=0, meta=scale_meta(), scoring_model=scoring
                 )
-                if q_score.scoring_model_id is None:
-                    q_score.scoring_model = scoring
-                    q_score.meta = scale_meta()
-                    q_score.save(update_fields=["scoring_model", "meta"])
                 ensure_scale_options(q_score)
 
-                # Q2: POLÍTICA (escala 1–5)
-                q_pol, _ = Question.objects.get_or_create(
-                    control=control,
-                    local_code="politica",
-                    defaults={
-                        "prompt": "Nível de POLÍTICA para este controle",
-                        "type": "scale",
-                        "required": False,
-                        "order": 1,
-                        "meta": scale_meta(),
-                        "scoring_model": scoring,  # opcional
-                    },
+                q_pol = Question.objects.create(
+                    control=control, local_code="politica", prompt="Nível de POLÍTICA para este controle",
+                    type="scale", required=False, order=1, meta=scale_meta(), scoring_model=scoring
                 )
-                if q_pol.meta != scale_meta():
-                    q_pol.meta = scale_meta()
-                    q_pol.save(update_fields=["meta"])
                 ensure_scale_options(q_pol)
 
-                # Q3: PRÁTICA (escala 1–5)
-                q_pra, _ = Question.objects.get_or_create(
-                    control=control,
-                    local_code="pratica",
-                    defaults={
-                        "prompt": "Nível de PRÁTICA para este controle",
-                        "type": "scale",
-                        "required": False,
-                        "order": 2,
-                        "meta": scale_meta(),
-                        "scoring_model": scoring,  # opcional
-                    },
+                q_pra = Question.objects.create(
+                    control=control, local_code="pratica", prompt="Nível de PRÁTICA para este controle",
+                    type="scale", required=False, order=2, meta=scale_meta(), scoring_model=scoring
                 )
-                if q_pra.meta != scale_meta():
-                    q_pra.meta = scale_meta()
-                    q_pra.save(update_fields=["meta"])
                 ensure_scale_options(q_pra)
 
-                # Q4: INFO (texto)
-                Question.objects.get_or_create(
-                    control=control,
-                    local_code="info",
-                    defaults={
-                        "prompt": "Informações complementares / notas",
-                        "type": "text",
-                        "required": False,
-                        "order": 3,
-                        "meta": {"placeholder": "Descreva evidências, links, procedimentos, etc."},
-                    },
+                Question.objects.create(
+                    control=control, local_code="info", prompt="Informações complementares / notas",
+                    type="text", required=False, order=3, meta={"placeholder": "Descreva evidências, links, procedimentos, etc."}
                 )
 
-                # Q5: ANEXO (arquivo)
-                Question.objects.get_or_create(
-                    control=control,
-                    local_code="attachment",
-                    defaults={
-                        "prompt": "Anexos (evidências)",
-                        "type": "file",
-                        "required": False,
-                        "order": 4,
-                        "meta": {},
-                    },
+                Question.objects.create(
+                    control=control, local_code="attachment", prompt="Anexos (evidências)",
+                    type="file", required=False, order=4, meta={}
                 )
 
-                # (Opcional) Q6: EVIDÊNCIAS/OBSERVAÇÕES curto (mantendo compatibilidade com seu seed anterior)
-                Question.objects.get_or_create(
-                    control=control,
-                    local_code="evidence",
-                    defaults={
-                        "prompt": "Evidências/observações",
-                        "type": "text",
-                        "required": False,
-                        "order": 5,
-                        "meta": {"placeholder": "Observações rápidas / referência cruzada"},
-                    },
+                Question.objects.create(
+                    control=control, local_code="evidence", prompt="Evidências/observações",
+                    type="text", required=False, order=5, meta={"placeholder": "Observações rápidas / referência cruzada"}
                 )
 
-        # ---- Template com todos os controles ----
-        template, _ = FormTemplate.objects.get_or_create(
+        # Template (todos os controles)
+        tpl = FormTemplate.objects.create(
             slug="nist-csf-2-pt-maturidade",
-            defaults={
-                "name": "NIST 2.0 Maturidade (PT-BR)",
-                "framework": framework,
-                "version": "1.0",
-                "description": "Template com todos os controles de maturidade em PT-BR.",
-                "active": True,
-                "editable": False,
-            },
+            name="NIST 2.0 Maturidade (PT-BR)",
+            framework=fw,
+            version="1.0",
+            description="Template com todos os controles de maturidade em PT-BR.",
+            active=True,
+            editable=False,
         )
 
-        # limpa vínculos e recria ordenação
-        TemplateItem.objects.filter(template=template).delete()
         order_counter = 0
         for dom_code in ["GV", "ID", "PR", "DE", "RS", "RC"]:
-            domain = domains[dom_code]
-            qs = Control.objects.filter(framework=framework, domain=domain).order_by("order", "code")
-            for control in qs:
-                TemplateItem.objects.get_or_create(
-                    template=template,
-                    control=control,
-                    question=None,
-                    defaults={"order": order_counter},
-                )
+            qs = Control.objects.filter(framework=fw, domain=domains[dom_code]).order_by("order", "code")
+            for c in qs:
+                TemplateItem.objects.create(template=tpl, control=c, order=order_counter)
                 order_counter += 1
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"OK! Framework='{framework.name}', domínios={len(domains)}, template='{template.name}'."
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(
+            f"OK! Framework='{fw.name}', Controles={Control.objects.filter(framework=fw).count()}, Template='{tpl.name}'."
+        ))

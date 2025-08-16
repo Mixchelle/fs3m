@@ -12,9 +12,19 @@ class SubmissionCreateSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         template: FormTemplate = data["template"]
-        data["framework"] = template.framework  # força coerência
-        return data
+        customer = data["customer"]
+        framework = template.framework
 
+        # força coerência
+        data["framework"] = framework
+
+        # 🔒 garante 1 por framework (exceto se você quiser permitir múltiplos "arquivados")
+        exists = Submission.objects.filter(customer=customer, framework=framework).exists()
+        if exists:
+            raise serializers.ValidationError(
+                {"non_field_errors": [f"Este cliente já possui uma submission para o framework '{framework.slug}'."]}
+            )
+        return data
 
 class SubmissionReadSerializer(serializers.ModelSerializer):
     total_questions = serializers.IntegerField(read_only=True)
@@ -97,3 +107,24 @@ class AnswerReadSerializer(serializers.ModelSerializer):
 
     def get_evidence_decrypted(self, obj: Answer):
         return obj.get_decrypted_evidence()
+
+
+
+class SubmissionBriefSerializer(serializers.ModelSerializer):
+    template = serializers.SerializerMethodField()
+    framework = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Submission
+        fields = [
+            "id", "status", "progress", "version", "created_at", "updated_at",
+            "template", "framework",
+        ]
+
+    def get_template(self, obj):
+        t: FormTemplate = obj.template
+        return {"id": t.id, "name": t.name, "slug": t.slug, "version": t.version}
+
+    def get_framework(self, obj):
+        f: Framework = obj.template.framework
+        return {"id": f.id, "slug": f.slug, "name": f.name, "version": f.version}

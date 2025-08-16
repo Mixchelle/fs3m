@@ -1,0 +1,5 @@
+import { redirect } from "next/navigation";
+
+export default function Root() {
+  redirect("/"); // mantém a rota, mas a middleware vai tratar. Se preferir, já manda para "/dashboard".
+}

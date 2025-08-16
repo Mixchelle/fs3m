@@ -9,8 +9,16 @@ class CustomUserManager(BaseUserManager):
         if not email:
             raise ValueError("O campo 'email' é obrigatório")
         email = self.normalize_email(email)
+
+        # Regra: todo gestor é staff e superuser
+        role = (extra_fields.get("role") or "").lower()
+        if role == "gestor":
+            extra_fields.setdefault("is_staff", True)
+            extra_fields.setdefault("is_superuser", True)
+
         if not extra_fields.get("username"):
             extra_fields["username"] = self._generate_unique_username(email)
+
         user = self.model(email=email, **extra_fields)
         if password:
             user.set_password(password)
@@ -53,7 +61,12 @@ class CustomUser(AbstractUser):
     nome = models.CharField(max_length=255, verbose_name="Nome Completo")
     email = models.EmailField(_("email address"), unique=True)
     role = models.CharField(max_length=50, choices=ROLE_CHOICES, default="cliente")
-
+    empresas = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Empresas Associadas",
+        help_text="Lista de empresas associadas ao usuário (opcional)."
+    )
     # --- M2M explícitos (não conflitar com defaults do AbstractUser) ---
     groups = models.ManyToManyField(Group, related_name="customuser_groups", blank=True)
     user_permissions = models.ManyToManyField(
@@ -116,9 +129,19 @@ class CustomUser(AbstractUser):
             # 20 bytes em hex maiúsculo é simples e compatível com pyotp
             self.otp_secret = secrets.token_hex(20).upper()
 
+    # --- Regra de negócio centralizada ---
+    def clean(self):
+        super().clean()
+        # Se for gestor, garante flags de admin
+        if (self.role or "").lower() == "gestor":
+            self.is_staff = True
+            self.is_superuser = True
+
     def save(self, *args, **kwargs):
         if not self.username:
             self.username = CustomUser.objects._generate_unique_username(self.email)
+        # aplica a regra sempre antes de persistir
+        self.clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
