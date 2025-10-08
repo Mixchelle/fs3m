@@ -1,4 +1,3 @@
-// app/(roles)/analyst/analises/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -134,10 +133,9 @@ export default function AnalysesPage() {
                   <td>{rel.analista_responsavel ?? "-"}</td>
                   <td>
                     <div className="actions">
-                      <Link className="btn btn-view" href={`/analyst/analises/${rel.id}`}>Ver</Link>
+                      <Link className="btn btn-view" href={`/manager/analises/${rel.id}`}>Ver</Link>
                       <div className="menu">
                         <button className="btn btn-more" title="Mais opções"><FiMoreVertical /></button>
-                        {/* aqui depois você pode abrir dropdown com Aprovar / Importar Word / Exportar Word */}
                       </div>
                     </div>
                   </td>
