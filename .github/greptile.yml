@@ -1,0 +1,15 @@
+# .github/greptile.yml
+review:
+  enabled: true
+  summary: true
+  inline: true
+  suggestions: true
+  auto_approve: false
+  auto_merge: false
+
+filters:
+  exclude:
+    - node_modules/**
+    - dist/**
+    - .next/**
+    - coverage/**
