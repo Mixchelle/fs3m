@@ -1,0 +1,150 @@
+/* styles/pages/analises.css */
+
+/* Layout base */
+.analises-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.analises-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summary { display: flex; gap: 12px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  min-width: 180px;
+}
+.card p {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+.card h2 { font-size: 28px; margin: 4px 0 0; }
+
+/* Filtros */
+.filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  background: var(--card);
+  min-width: 260px;
+}
+.search-box input {
+  border: none;
+  outline: none;
+  width: 100%;
+  color: var(--foreground);
+  background: transparent;
+}
+.search-box input::placeholder { color: var(--muted-foreground); }
+
+.right-tools { display: flex; gap: 8px; }
+.right-tools select {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--foreground);
+}
+
+/* Tabela */
+.table-wrap {
+  overflow: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  color: var(--foreground);
+}
+.table th {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  background: var(--muted);
+}
+.table tr:hover td { background: color-mix(in oklab, var(--muted) 60%, transparent); }
+
+/* Tags de status – usando tokens existentes */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.tag-progress {
+  /* Aproximação de "review" para Em Progresso */
+  background: color-mix(in oklab, var(--color-status-review) 18%, transparent);
+  color: var(--color-status-review);
+}
+.tag-finished {
+  /* Aproximação de "done" para Finalizado */
+  background: color-mix(in oklab, var(--color-status-done) 18%, transparent);
+  color: var(--color-status-done);
+}
+.tag-approved {
+  /* Usa primary para 'Aprovado Supervisor' */
+  background: color-mix(in oklab, var(--primary) 18%, transparent);
+  color: var(--primary);
+}
+
+/* Ações e botões */
+.actions { display: flex; gap: 8px; align-items: center; }
+.btn {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--foreground);
+  transition: background .2s ease, border-color .2s ease;
+}
+.btn:hover { background: var(--muted); }
+.btn-view {
+  border-color: color-mix(in oklab, var(--primary) 35%, var(--border));
+  background: color-mix(in oklab, var(--primary) 10%, var(--card));
+}
+
+/* Paginação */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+}
+.pagination button {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: var(--foreground);
+}
+.pagination span { font-size: 13px; color: var(--muted-foreground); }
