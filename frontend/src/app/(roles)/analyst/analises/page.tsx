@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FiSearch, FiMoreVertical, FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight } from "react-icons/fi";
 import { listAnalyses, type Analysis } from "@/services/analises";
-import { useAuth } from "@/contexts/AuthContext";
 import { useProtectedRoute } from "@/hooks/useProtectedRoute";
 import AppShell from "@/components/layout/AppShell";
 
@@ -15,8 +13,6 @@ const fetcher = (_: string, params: any) => listAnalyses(params);
 export default function AnalysesPage() {
   useProtectedRoute(["analyst", "analista", "manager", "gestor"]); // ajusta como preferir
 
-  const router = useRouter();
-  const { user } = useAuth();
 
   // estado de filtros/ordenação/paginação
   const [search, setSearch] = useState("");
@@ -80,7 +76,7 @@ export default function AnalysesPage() {
         </div>
 
         <div className="right-tools">
-          <select value={status} onChange={(e) => setStatus(e.target.value as any)}>
+          <select value={status} onChange={(e) => setStatus(e.target.value as "todos" | "Finalizado" | "Em progresso" | "Aprovado")}>
             <option value="todos">Todos os status</option>
             <option value="Em progresso">Em progresso</option>
             <option value="Finalizado">Finalizado</option>

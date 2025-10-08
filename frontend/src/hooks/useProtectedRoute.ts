@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const PUBLIC_ROUTES = new Set<string>(["/login", "/auth/login", "/(auth)/login"]);
 
-export function useProtectedRoute() {
+export function useProtectedRoute(p0: string[]) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
