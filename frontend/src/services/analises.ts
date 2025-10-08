@@ -1,5 +1,6 @@
 // services/analises.ts
-import apiClient from "@/lib/apiClient";
+
+import { api } from "@/lib/apiClient";
 
 export type Analysis = {
   id: string | number;
@@ -28,7 +29,48 @@ export type ListAnalysesParams = {
   ordering?: string;  // ex: "nome_formulario" ou "-data_finalizado"
 };
 
-export async function listAnalyses(params: ListAnalysesParams = {}) {
-  const res = await apiClient.get<ListAnalysesResponse>("/analyses", { params });
-  return res.data;
+
+export interface Submission {
+  id: number | string;
+  public_title: string;
+  name_internal: string;
+  status: "draft" | "active" | "paused" | string;
+  created_by?: string | null;
+  created: string; // ISO
+  // adicione outros campos se existirem no backend
+}
+
+export interface PagedResponse<T> {
+  total: number;
+  page: number;
+  limit: number;
+  items: T[];
+}
+
+const BASE_PATH = "/responses/submissions/";
+
+export async function listAnalises(page = 1, limit = 10) {
+  const { data } = await api.get<PagedResponse<Submission>>(BASE_PATH, {
+    params: { page, limit },
+  });
+  return data;
+}
+
+export async function getAnalise(id: number | string) {
+  const { data } = await api.get<Submission>(`${BASE_PATH}${id}/`);
+  return data;
+}
+
+export async function createAnalise(payload: Partial<Submission>) {
+  const { data } = await api.post<Submission>(BASE_PATH, payload);
+  return data;
+}
+
+export async function updateAnalise(id: number | string, payload: Partial<Submission>) {
+  const { data } = await api.patch<Submission>(`${BASE_PATH}${id}/`, payload);
+  return data;
+}
+
+export async function deleteAnalise(id: number | string) {
+  await api.delete(`${BASE_PATH}${id}/`);
 }
